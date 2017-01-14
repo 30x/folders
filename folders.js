@@ -12,13 +12,14 @@ function verifyFolder(req, folder) {
   var rslt = lib.setStandardCreationProperties(req, folder, user)
   if (!folder.isA == 'Folder')
     return 'invalid JSON: "isA" property not set to "Folder" ' + JSON.stringify(folder)
+  return null
 }
 
 function createFolder(req, res, folder) {
   pLib.ifAllowedThen(req, res, '/', 'folders', 'create', function() {
     var err = verifyFolder(req, folder)
-    if (err !== null) 
-      lib.badRequest(res, err)
+    if (err !== null)
+      lib.badRequest(res, err) 
     else {
       var id = lib.uuid4()
       var selfURL = makeSelfURL(req, id)
@@ -65,6 +66,7 @@ function getFolder(req, res, id) {
 function deleteFolder(req, res, id) {
   pLib.ifAllowedThen(req, res, null, '_self', 'delete', function(err, reason) {
     db.deleteFolderThen(req, res, id, function (folder, etag) {
+      addCalculatedProperties(folder)
       lib.found(req, res, folder, etag)
     })
   })
