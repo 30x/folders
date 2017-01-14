@@ -66,6 +66,13 @@ function getFolder(req, res, id) {
 function deleteFolder(req, res, id) {
   pLib.ifAllowedThen(req, res, null, '_self', 'delete', function(err, reason) {
     db.deleteFolderThen(req, res, id, function (folder, etag) {
+      lib.sendInternalRequestThen(req, res, `/permissions?${FOLDERS}${id}`, 'DELETE', undefined, function (clientRes) {
+        lib.getClientResponseBody(clientRes, function(body) {
+          var statusCode = clientRes.statusCode
+          if (statusCode !== 200)
+            console.log(`unable to delete permissions for ${FOLDERS}${id}`)
+        })
+      })
       addCalculatedProperties(folder)
       lib.found(req, res, folder, etag)
     })
