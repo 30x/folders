@@ -44,12 +44,12 @@ function createFolder(req, res, folder) {
 }
 
 function makeSelfURL(req, key) {
-  return FOLDERS + key
+  return `${rLib.INTERNAL_URL_PREFIX}${FOLDERS}${key}`
 }
 
 function addCalculatedProperties(folder) {
-  folder._permissions = `scheme://authority/permissions?${externalSelf}`
-  folder._permissionsHeirs = `scheme://authority/permissions-heirs?${externalSelf}`  
+  folder._permissions = `${rLib.INTERNAL_URL_PREFIX}/permissions?${externalSelf}`
+  folder._permissionsHeirs = `${rLib.INTERNAL_URL_PREFIX}/permissions-heirs?${externalSelf}`  
 }
 
 function getFolder(req, res, id) {
