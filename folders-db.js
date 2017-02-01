@@ -1,17 +1,17 @@
 'use strict'
 var Pool = require('pg').Pool
-var lib = require('http-helper-functions')
+var rLib = require('response-helper-functions')
 const db = require('./folders-pg.js')
 
 function withErrorHandling(req, res, callback) {
   return function (err) {
     if (err == 404) 
-      lib.notFound(req, res)
+      rLib.notFound(res, `//${req.headers.host}${req.url} not found`)
     else if (err)
-      lib.internalError(res, err)
+      rLib.internalError(res, err)
     else 
       callback.apply(this, Array.prototype.slice.call(arguments, 1))
-  }
+  }`//${req.headers.host}${req.url} not found`
 }
 
 function createFolderThen(req, res, id, selfURL, folder, callback) {

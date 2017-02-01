@@ -2,6 +2,7 @@
 const http = require('http')
 const url = require('url')
 const lib = require('http-helper-functions')
+const rLib = require('response-helper-functions')
 const db = require('./folders-db.js')
 const pLib = require('permissions-helper-functions')
 
@@ -19,9 +20,9 @@ function createFolder(req, res, folder) {
   pLib.ifAllowedThen(req, res, '/', 'folders', 'create', function() {
     var err = verifyFolder(req, folder)
     if (err !== null)
-      lib.badRequest(res, err) 
+      rLib.badRequest(res, err) 
     else {
-      var id = lib.uuid4()
+      var id = rLib.uuid4()
       var selfURL = makeSelfURL(req, id)
       var permissions = folder._permissions
       if (permissions !== undefined) {
@@ -35,7 +36,7 @@ function createFolder(req, res, folder) {
         db.createFolderThen(req, res, id, selfURL, folder, function(etag) {
           folder.self = selfURL 
           addCalculatedProperties(folder)
-          lib.created(req, res, folder, folder.self, etag)
+          rLib.created(res, folder, req.headers.accept, folder.self, etag)
         })
       })
     }
@@ -43,11 +44,10 @@ function createFolder(req, res, folder) {
 }
 
 function makeSelfURL(req, key) {
-  return 'scheme://authority' + FOLDERS + key
+  return FOLDERS + key
 }
 
 function addCalculatedProperties(folder) {
-  var externalSelf = lib.externalizeURLs(folder.self)
   folder._permissions = `scheme://authority/permissions?${externalSelf}`
   folder._permissionsHeirs = `scheme://authority/permissions-heirs?${externalSelf}`  
 }
@@ -57,8 +57,7 @@ function getFolder(req, res, id) {
     db.withFolderDo(req, res, id, function(folder , etag) {
       folder.self = makeSelfURL(req, id)
       addCalculatedProperties(folder)
-      lib.externalizeURLs(folder, req.headers.host)
-      lib.found(req, res, folder, etag)
+      rLib.found(res, folder, req.headers.accept, folder.self, etag)
     })
   })
 }
@@ -73,8 +72,9 @@ function deleteFolder(req, res, id) {
             console.log(`unable to delete permissions for ${FOLDERS}${id}`)
         })
       })
+      folder.self = makeSelfURL(req, id)
       addCalculatedProperties(folder)
-      lib.found(req, res, folder, etag)
+      rLib.found(res, folder, req.headers.accept, folder.self, etag)
     })
   })
 }
@@ -86,7 +86,7 @@ function updateFolder(req, res, id, patch) {
         db.updateFolderThen(req, res, id, folder, patchedFolder, etag, function (etag) {
           patchedFolder.self = makeSelfURL(req, id) 
           addCalculatedProperties(patchedFolder)
-          lib.found(req, res, patchedFolder, etag)
+          rLib.found(res, patchedFolder, req.headers.accept, patchedFolder.self, etag)
         })
       })
     })
@@ -99,14 +99,13 @@ function getFoldersForUser(req, res, user) {
   if (user == requestingUser) {
     db.withFoldersForUserDo(req, res, user, function (folderIDs) {
       var rslt = {
-        self: `scheme://authority${req.url}`,
+        self: req.url,
         contents: folderIDs.map(id => `//${req.headers.host}${FOLDERS}${id}`)
       }
-      lib.externalizeURLs(rslt)
-      lib.found(req, res, rslt)
+      rLib.found(res, rslt, req.headers.accept, rslt.self)
     })
   } else
-    lib.forbidden(req, res)
+    rLib.forbidden(res, `One user may not request another's folders. Requesting user: ${requestingUser} target user: ${user}`)
 }
 
 function requestHandler(req, res) {
@@ -114,7 +113,7 @@ function requestHandler(req, res) {
     if (req.method == 'POST') 
       lib.getServerPostObject(req, res, (t) => createFolder(req, res, t))
     else 
-      lib.methodNotAllowed(req, res, ['POST'])
+      rLib.methodNotAllowed(res, ['POST'])
   else {
     var req_url = url.parse(req.url)
     if (req_url.pathname.startsWith(FOLDERS)) {
@@ -126,9 +125,9 @@ function requestHandler(req, res) {
       else if (req.method == 'PATCH') 
         lib.getServerPostObject(req, res, (jso) => updateFolder(req, res, id, jso))
       else
-        lib.methodNotAllowed(req, res, ['GET', 'DELETE', 'PATCH'])
+        rLib.methodNotAllowed(res, ['GET', 'DELETE', 'PATCH'])
     } else 
-      lib.notFound(req, res)
+      rLib.notFound(res, `//${req.headers.host}${req.url} not found`)
   }
 }
 
