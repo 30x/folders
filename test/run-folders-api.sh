@@ -1,6 +1,6 @@
 export IPADDRESS="127.0.0.1"
 export PORT=3012
-export COMPONENT="folders"
+export COMPONENT_NAME="folders"
 export SPEEDUP=10
 export EXTERNAL_SY_ROUTER_HOST="localhost"
 export EXTERNAL_SY_ROUTER_PORT="8080"
