@@ -11,7 +11,7 @@ var config = {
 
 var pool = new Pool(config)
 
-function createFolderThen(req, id, selfURL, folder, callback) {
+function createFolderThen(id, folder, callback) {
   var query = `INSERT INTO folders (id, etag, data) values('${id}', 1, '${JSON.stringify(folder)}') RETURNING etag`
   pool.query(query, function (err, pgResult) {
     if (err)
@@ -27,7 +27,7 @@ function createFolderThen(req, id, selfURL, folder, callback) {
   })
 }
 
-function withFolderDo(req, id, callback) {
+function withFolderDo(id, callback) {
   pool.query('SELECT etag, data FROM folders WHERE id = $1', [id], function (err, pg_res) {
     if (err) {
       callback(500)
@@ -44,7 +44,7 @@ function withFolderDo(req, id, callback) {
   })
 }
 
-function deleteFolderThen(req, id, callback) {
+function deleteFolderThen(id, callback) {
   var query = `DELETE FROM folders WHERE id = '${id}' RETURNING *`
   pool.query(query, function (err, pgResult) {
     if (err)
@@ -60,9 +60,8 @@ function deleteFolderThen(req, id, callback) {
   })
 }
 
-function updateFolderThen(req, id, folder, patchedFolder, etag, callback) {
-  var key = lib.internalizeURL(id, req.headers.host)
-  var query = `UPDATE folders SET (etag, data) = (${(etag+1) % 2147483647}, '${JSON.stringify(patchedFolder)}') WHERE id = '${key}' AND etag = ${etag} RETURNING etag`
+function updateFolderThen(id, folder, etag, callback) {
+  var query = `UPDATE folders SET (etag, data) = (${(etag+1) % 2147483647}, '${JSON.stringify(folder)}') WHERE id = '${id}' AND etag = ${etag} RETURNING etag`
   pool.query(query, function (err, pgResult) {
     if (err)
       callback(err)

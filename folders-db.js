@@ -3,7 +3,7 @@ var Pool = require('pg').Pool
 var rLib = require('response-helper-functions')
 const db = require('./folders-pg.js')
 
-function withErrorHandling(req, res, callback) {
+function withErrorHandling(res, callback) {
   return function (err) {
     if (err == 404) 
       rLib.notFound(res, `//${req.headers.host}${req.url} not found`)
@@ -11,23 +11,23 @@ function withErrorHandling(req, res, callback) {
       rLib.internalError(res, err)
     else 
       callback.apply(this, Array.prototype.slice.call(arguments, 1))
-  }`//${req.headers.host}${req.url} not found`
+  }
 }
 
-function createFolderThen(req, res, id, selfURL, folder, callback) {
-  db.createFolderThen(req, id, selfURL, folder, withErrorHandling(req, res, callback))
+function createFolderThen(res, id, folder, callback) {
+  db.createFolderThen(id, folder, withErrorHandling(res, callback))
 }
 
-function withFolderDo(req, res, id, callback) {
-  db.withFolderDo(req, id, withErrorHandling(req, res, callback))
+function withFolderDo(res, id, callback) {
+  db.withFolderDo(id, withErrorHandling(res, callback))
 }
 
-function deleteFolderThen(req, res, id, callback) {
-  db.deleteFolderThen(req, id, withErrorHandling(req, res, callback))
+function deleteFolderThen(res, id, callback) {
+  db.deleteFolderThen(id, withErrorHandling(res, callback))
 }
 
-function updateFolderThen(req, res, id, folder, patchedFolder, etag, callback) {
-  db.updateFolderThen(req, id, folder, patchedFolder, etag, withErrorHandling(req, res, callback))
+function updateFolderThen(res, id, folder, etag, callback) {
+  db.updateFolderThen(id, folder, etag, withErrorHandling(res, callback))
 }
 
 function init(callback) {

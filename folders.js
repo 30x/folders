@@ -17,7 +17,7 @@ function verifyFolder(req, folder) {
 }
 
 function createFolder(req, res, folder) {
-  pLib.ifAllowedThen(req, res, '/', 'folders', 'create', function() {
+  pLib.ifAllowedThen(lib.flowThroughHeaders(req), res, '/', 'folders', 'create', function() {
     var err = verifyFolder(req, folder)
     if (err !== null)
       rLib.badRequest(res, err) 
@@ -33,7 +33,7 @@ function createFolder(req, res, folder) {
         // Create permissions first. If we fail after creating the permissions resource but before creating the main resource, 
         // there will be a useless but harmless permissions document.
         // If we do things the other way around, a folder without matching permissions could cause problems.
-        db.createFolderThen(req, res, id, selfURL, folder, function(etag) {
+        db.createFolderThen(res, id, folder, function(etag) {
           folder.self = selfURL 
           addCalculatedProperties(folder)
           rLib.created(res, folder, req.headers.accept, folder.self, etag)
@@ -48,13 +48,14 @@ function makeSelfURL(req, key) {
 }
 
 function addCalculatedProperties(folder) {
+  var externalSelf = folder.self.substring(rLib.INTERNAL_URL_PREFIX.length)
   folder._permissions = `${rLib.INTERNAL_URL_PREFIX}/permissions?${externalSelf}`
   folder._permissionsHeirs = `${rLib.INTERNAL_URL_PREFIX}/permissions-heirs?${externalSelf}`  
 }
 
 function getFolder(req, res, id) {
-  pLib.ifAllowedThen(req, res, null, '_self', 'read', function(err, reason) {
-    db.withFolderDo(req, res, id, function(folder , etag) {
+  pLib.ifAllowedThen(lib.flowThroughHeaders(req), res, req.url, '_self', 'read', function(err, reason) {
+    db.withFolderDo(res, id, function(folder , etag) {
       folder.self = makeSelfURL(req, id)
       addCalculatedProperties(folder)
       rLib.found(res, folder, req.headers.accept, folder.self, etag)
@@ -63,8 +64,8 @@ function getFolder(req, res, id) {
 }
 
 function deleteFolder(req, res, id) {
-  pLib.ifAllowedThen(req, res, null, '_self', 'delete', function(err, reason) {
-    db.deleteFolderThen(req, res, id, function (folder, etag) {
+  pLib.ifAllowedThen(lib.flowThroughHeaders(req), res, req.url, '_self', 'delete', function(err, reason) {
+    db.deleteFolderThen(res, id, function (folder, etag) {
       lib.sendInternalRequestThen(res, 'DELETE', `/permissions?${FOLDERS}${id}`, lib.flowThroughHeaders(req), null, function (clientRes) {
         lib.getClientResponseBody(clientRes, function(body) {
           var statusCode = clientRes.statusCode
@@ -80,8 +81,8 @@ function deleteFolder(req, res, id) {
 }
 
 function updateFolder(req, res, id, patch) {
-  pLib.ifAllowedThen(req, res, null, '_self', 'update', function() {
-    db.withFolderDo(req, res, id, function(folder , etag) {
+  pLib.ifAllowedThen(lib.flowThroughHeaders(req), res, null, '_self', 'update', function() {
+    db.withFolderDo(res, id, function(folder , etag) {
       lib.applyPatch(req, res, folder, patch, function(patchedFolder) {
         db.updateFolderThen(req, res, id, folder, patchedFolder, etag, function (etag) {
           patchedFolder.self = makeSelfURL(req, id) 
@@ -97,7 +98,7 @@ function getFoldersForUser(req, res, user) {
   var requestingUser = lib.getUser(req.headers.authorization)
   user = lib.internalizeURL(user, req.headers.host)
   if (user == requestingUser) {
-    db.withFoldersForUserDo(req, res, user, function (folderIDs) {
+    db.withFoldersForUserDo(res, user, function (folderIDs) {
       var rslt = {
         self: req.url,
         contents: folderIDs.map(id => `//${req.headers.host}${FOLDERS}${id}`)
