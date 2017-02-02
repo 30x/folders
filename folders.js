@@ -29,7 +29,7 @@ function createFolder(req, res, folder) {
         delete folder._permissions; // interesting unusual case where ; is necessary
         (new pLib.Permissions(permissions)).resolveRelativeURLs(selfURL)
       }
-      pLib.createPermissionsThen(req, res, selfURL, permissions, function(err, permissionsURL, permissions, responseHeaders){
+      pLib.createPermissionsThen(lib.flowThroughHeaders(req), res, selfURL, permissions, function(err, permissionsURL, permissions, responseHeaders){
         // Create permissions first. If we fail after creating the permissions resource but before creating the main resource, 
         // there will be a useless but harmless permissions document.
         // If we do things the other way around, a folder without matching permissions could cause problems.
@@ -66,12 +66,8 @@ function getFolder(req, res, id) {
 function deleteFolder(req, res, id) {
   pLib.ifAllowedThen(lib.flowThroughHeaders(req), res, req.url, '_self', 'delete', function(err, reason) {
     db.deleteFolderThen(res, id, function (folder, etag) {
-      lib.sendInternalRequestThen(res, 'DELETE', `/permissions?${FOLDERS}${id}`, lib.flowThroughHeaders(req), null, function (clientRes) {
-        lib.getClientResponseBody(clientRes, function(body) {
-          var statusCode = clientRes.statusCode
-          if (statusCode !== 200)
-            console.log(`unable to delete permissions for ${FOLDERS}${id}`)
-        })
+      pLib.deletePermissionsThen(lib.flowThroughHeaders(req), res, `${FOLDERS}${id}`, function () {
+        console.log(`correctly deleted permissions for ${FOLDERS}${id}`)
       })
       folder.self = makeSelfURL(req, id)
       addCalculatedProperties(folder)
