@@ -22,7 +22,7 @@ function createFolder(req, res, folder) {
     if (err !== null)
       rLib.badRequest(res, err) 
     else {
-      var id = rLib.uuid4()
+      var id = rLib.uuidw()
       var selfURL = makeSelfURL(req, id)
       var permissions = folder._permissions
       if (permissions !== undefined) {
