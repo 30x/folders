@@ -9,7 +9,7 @@ var config = {
   database: process.env.PG_DATABASE
 }
 
-var pool = new Pool(config)
+var pool
 
 function createFolderThen(id, folder, callback) {
   var query = `INSERT INTO folders (id, etag, data) values('${id}', 1, '${JSON.stringify(folder)}') RETURNING etag`
@@ -76,7 +76,8 @@ function updateFolderThen(id, folder, etag, callback) {
   })
 }
 
-function init(callback) {
+function init(callback, aPool) {
+  pool = aPool || new Pool(config)
   var query = 'CREATE TABLE IF NOT EXISTS folders (id text primary key, etag int, data jsonb)'
   pool.query(query, function(err, pgResult) {
     if(err)

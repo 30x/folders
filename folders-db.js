@@ -30,8 +30,8 @@ function updateFolderThen(res, id, folder, etag, callback) {
   db.updateFolderThen(id, folder, etag, withErrorHandling(res, callback))
 }
 
-function init(callback) {
-  db.init(callback)
+function init(callback, aPool) {
+  db.init(callback, aPool)
 }
 
 exports.createFolderThen = createFolderThen

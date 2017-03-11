@@ -128,8 +128,8 @@ function requestHandler(req, res) {
   }
 }
 
-function init(callback) {
-  db.init(callback)
+function init(callback, aPool) {
+  db.init(callback, aPool)
 }
 
 function run(){
