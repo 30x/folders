@@ -12,8 +12,8 @@ var config = {
 var pool
 
 function createFolderThen(id, folder, callback) {
-  var query = `INSERT INTO folders (id, etag, data) values('${id}', 1, '${JSON.stringify(folder)}') RETURNING etag`
-  pool.query(query, function (err, pgResult) {
+  var query = `INSERT INTO folders (id, etag, data) values($1, 1, $2) RETURNING etag`
+  pool.query(query, [id, JSON.stringify(folder)], function (err, pgResult) {
     if (err)
       callback(err)
     else {
@@ -45,8 +45,8 @@ function withFolderDo(id, callback) {
 }
 
 function deleteFolderThen(id, callback) {
-  var query = `DELETE FROM folders WHERE id = '${id}' RETURNING *`
-  pool.query(query, function (err, pgResult) {
+  var query = `DELETE FROM folders WHERE id = $1 RETURNING *`
+  pool.query(query, [id], function (err, pgResult) {
     if (err)
       callback(err)
     else {
@@ -61,8 +61,9 @@ function deleteFolderThen(id, callback) {
 }
 
 function updateFolderThen(id, folder, etag, callback) {
-  var query = `UPDATE folders SET (etag, data) = (${(etag+1) % 2147483647}, '${JSON.stringify(folder)}') WHERE id = '${id}' AND etag = ${etag} RETURNING etag`
-  pool.query(query, function (err, pgResult) {
+  var query = `UPDATE folders SET (etag, data) = ($1, $2) WHERE id = $3 AND etag = $3 RETURNING etag`
+  var args = [(etag+1) % 2147483647, JSON.stringify(folder), id, etag]
+  pool.query(query, args, function (err, pgResult) {
     if (err)
       callback(err)
     else {
