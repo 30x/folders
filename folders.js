@@ -79,7 +79,7 @@ function deleteFolder(req, res, id) {
 function updateFolder(req, res, id, patch) {
   pLib.ifAllowedThen(lib.flowThroughHeaders(req), res, null, '_self', 'update', function() {
     db.withFolderDo(res, id, function(folder , etag) {
-      lib.applyPatch(req, res, folder, patch, function(patchedFolder) {
+      lib.applyPatch(req.headers, res, folder, patch, function(patchedFolder) {
         db.updateFolderThen(req, res, id, folder, patchedFolder, etag, function (etag) {
           patchedFolder.self = makeSelfURL(req, id) 
           addCalculatedProperties(patchedFolder)
