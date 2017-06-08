@@ -6,7 +6,7 @@ const rLib = require('response-helper-functions')
 const db = require('./folders-db.js')
 const pLib = require('permissions-helper-functions')
 
-var FOLDERS = '/folders/'
+var FOLDERS = '/az-fld-'
 
 function verifyFolder(req, folder) {
   var user = lib.getUser(req.headers.authorization)
@@ -49,8 +49,8 @@ function makeSelfURL(req, key) {
 
 function addCalculatedProperties(folder) {
   var externalSelf = folder.self.substring(rLib.INTERNAL_URL_PREFIX.length)
-  folder._permissions = `${rLib.INTERNAL_URL_PREFIX}/permissions?${externalSelf}`
-  folder._permissionsHeirs = `${rLib.INTERNAL_URL_PREFIX}/permissions-heirs?${externalSelf}`  
+  folder._permissions = `${rLib.INTERNAL_URL_PREFIX}/az-permissions?${externalSelf}`
+  folder._permissionsHeirs = `${rLib.INTERNAL_URL_PREFIX}/az-permissions-heirs?${externalSelf}`  
 }
 
 function getFolder(req, res, id) {
@@ -147,7 +147,7 @@ function start() {
   else
     module.exports = {
       requestHandler:requestHandler,
-      paths: ['/folders'],
+      paths: ['/az-folders', '/az-fld-'],
       init: init
     }
 }
