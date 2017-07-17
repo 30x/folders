@@ -4,7 +4,7 @@ const url = require('url')
 const lib = require('http-helper-functions')
 const rLib = require('response-helper-functions')
 const db = require('./folders-db.js')
-const pLib = require('permissions-helper-functions')
+const pLib = require('@apigee/permissions-helper-functions')
 
 var FOLDERS = '/az-fld-'
 
@@ -20,7 +20,7 @@ function createFolder(req, res, folder) {
   pLib.ifAllowedThen(lib.flowThroughHeaders(req), res, '/', 'folders', 'create', function() {
     var err = verifyFolder(req, folder)
     if (err !== null)
-      rLib.badRequest(res, err) 
+      rLib.badRequest(res, err)
     else {
       var id = rLib.uuidw()
       var selfURL = makeSelfURL(req, id)
@@ -30,11 +30,11 @@ function createFolder(req, res, folder) {
         (new pLib.Permissions(permissions)).resolveRelativeURLs(selfURL)
       }
       pLib.createPermissionsThen(lib.flowThroughHeaders(req), res, selfURL, permissions, function(err, permissionsURL, permissions, responseHeaders){
-        // Create permissions first. If we fail after creating the permissions resource but before creating the main resource, 
+        // Create permissions first. If we fail after creating the permissions resource but before creating the main resource,
         // there will be a useless but harmless permissions document.
         // If we do things the other way around, a folder without matching permissions could cause problems.
         db.createFolderThen(res, id, folder, function(etag) {
-          folder.self = selfURL 
+          folder.self = selfURL
           addCalculatedProperties(folder)
           rLib.created(res, folder, req.headers.accept, folder.self, etag)
         })
@@ -50,7 +50,7 @@ function makeSelfURL(req, key) {
 function addCalculatedProperties(folder) {
   var externalSelf = folder.self.substring(rLib.INTERNAL_URL_PREFIX.length)
   folder._permissions = `${rLib.INTERNAL_URL_PREFIX}/az-permissions?${externalSelf}`
-  folder._permissionsHeirs = `${rLib.INTERNAL_URL_PREFIX}/az-permissions-heirs?${externalSelf}`  
+  folder._permissionsHeirs = `${rLib.INTERNAL_URL_PREFIX}/az-permissions-heirs?${externalSelf}`
 }
 
 function getFolder(req, res, id) {
@@ -81,7 +81,7 @@ function updateFolder(req, res, id, patch) {
     db.withFolderDo(res, id, function(folder , etag) {
       lib.applyPatch(req.headers, res, folder, patch, function(patchedFolder) {
         db.updateFolderThen(req, res, id, folder, patchedFolder, etag, function (etag) {
-          patchedFolder.self = makeSelfURL(req, id) 
+          patchedFolder.self = makeSelfURL(req, id)
           addCalculatedProperties(patchedFolder)
           rLib.found(res, patchedFolder, req.headers.accept, patchedFolder.self, etag)
         })
@@ -106,10 +106,10 @@ function getFoldersForUser(req, res, user) {
 }
 
 function requestHandler(req, res) {
-  if (req.url == '/folders') 
-    if (req.method == 'POST') 
+  if (req.url == '/folders')
+    if (req.method == 'POST')
       lib.getServerPostObject(req, res, (t) => createFolder(req, res, t))
-    else 
+    else
       rLib.methodNotAllowed(res, ['POST'])
   else {
     var req_url = url.parse(req.url)
@@ -117,13 +117,13 @@ function requestHandler(req, res) {
       var id = req_url.pathname.substring(FOLDERS.length)
       if (req.method == 'GET')
         getFolder(req, res, id)
-      else if (req.method == 'DELETE') 
+      else if (req.method == 'DELETE')
         deleteFolder(req, res, id)
-      else if (req.method == 'PATCH') 
+      else if (req.method == 'PATCH')
         lib.getServerPostObject(req, res, (jso) => updateFolder(req, res, id, jso))
       else
         rLib.methodNotAllowed(res, ['GET', 'DELETE', 'PATCH'])
-    } else 
+    } else
       rLib.notFound(res, `//${req.headers.host}${req.url} not found`)
   }
 }
@@ -142,7 +142,7 @@ function run(){
 }
 
 function start() {
-  if (require.main === module) 
+  if (require.main === module)
     run()
   else
     module.exports = {
@@ -152,14 +152,14 @@ function start() {
     }
 }
 
-if (process.env.INTERNAL_SY_ROUTER_HOST == 'kubernetes_host_ip') 
+if (process.env.INTERNAL_SY_ROUTER_HOST == 'kubernetes_host_ip')
   lib.getHostIPThen(function(err, hostIP){
-    if (err) 
+    if (err)
       process.exit(1)
     else {
       process.env.INTERNAL_SY_ROUTER_HOST = hostIP
       start()
     }
   })
-else 
+else
   start()
